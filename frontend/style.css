@@ -1,0 +1,75 @@
+:root {
+    --ppa-olive: #85982d;
+    --ppa-gold: #b8860b;
+    --ppa-cream: #fef9e7;
+    --ppa-panel: #fffacd;
+    --ppa-border: #f0d060;
+    --ppa-text: #7a5c00;
+}
+
+body {
+    background: var(--ppa-cream);
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    color: #3d2b00;
+}
+
+.navbar-ppa {
+    background: var(--ppa-olive) !important;
+}
+.navbar-ppa .navbar-brand,
+.navbar-ppa .nav-link {
+    color: #fff8dc !important;
+    font-weight: 600;
+}
+.navbar-ppa .nav-link.router-link-exact-active {
+    text-decoration: underline;
+}
+.btn-logout {
+    background: #8b0000;
+    border-color: #8b0000;
+    color: #fff !important;
+}
+
+.ppa-panel {
+    background: var(--ppa-panel);
+    border: 1px solid var(--ppa-border);
+    border-radius: 4px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.ppa-title {
+    color: var(--ppa-text);
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    background: var(--ppa-panel);
+    border-top: 4px solid var(--ppa-gold);
+    border-radius: 4px;
+    padding: 1.2rem;
+    text-align: center;
+}
+.stat-card h3 { color: var(--ppa-gold); font-size: 2rem; margin: 0; }
+.stat-card p { color: var(--ppa-text); margin: 0.3rem 0 0; }
+
+.btn-gold {
+    background: var(--ppa-gold);
+    border-color: var(--ppa-gold);
+    color: #fff;
+}
+.btn-gold:hover { background: #96700a; color: #fff; }
+
+.auth-box {
+    max-width: 480px;
+    margin: 3rem auto;
+    background: var(--ppa-panel);
+    border: 1px solid var(--ppa-border);
+    border-radius: 4px;
+    padding: 2rem;
+}
+
+.table thead { background: var(--ppa-gold); color: #fff8dc; }
+
+.badge-eligible { background: #28a745; }
+.badge-ineligible { background: #dc3545; }

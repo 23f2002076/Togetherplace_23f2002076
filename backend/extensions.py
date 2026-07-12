@@ -1,0 +1,11 @@
+from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager
+from flask_caching import Cache
+from celery import Celery
+
+db = SQLAlchemy()
+jwt = JWTManager()
+cache = Cache()
+
+# Celery instance is configured (broker/backend) inside app factory via celery.conf.update
+celery = Celery(__name__)
