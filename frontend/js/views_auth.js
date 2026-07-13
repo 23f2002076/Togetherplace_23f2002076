@@ -17,7 +17,6 @@ const LoginView = {
             <button class="btn btn-gold w-100" :disabled="loading">{{ loading ? 'Signing in...' : 'Login' }}</button>
         </form>
         <p class="text-center mt-3">No account? <router-link to="/register">Register here</router-link></p>
-        <p class="text-center text-muted small">Admin login: admin / admin@123</p>
     </div>`,
     data() {
         return { username: '', password: '', error: '', loading: false };
