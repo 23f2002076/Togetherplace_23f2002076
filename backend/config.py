@@ -3,11 +3,6 @@ from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-
-# .env file se key=value padh ke os.environ me daal do - taki har baar
-# terminal me $env: type na karna pade. python-dotenv install nahi kiya
-# jaan bujh ke, kyunki wo mandatory tech stack me nahi hai - chhota sa
-# loader khud likh diya, isse kaam ban jata hai.
 def _load_dotenv():
     env_path = os.path.join(BASE_DIR, '.env')
     if not os.path.exists(env_path):
