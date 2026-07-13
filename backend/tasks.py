@@ -10,30 +10,62 @@ from flask import current_app
 
 @celery.task(name='tasks.send_deadline_reminders')
 def send_deadline_reminders():
-    """Celery Beat daily job — reminds students of drives closing soon that
-    they're eligible for and haven't applied to yet."""
+    """Celery Beat daily job — 2 kism ke reminder bhejta hai, dono seedha
+    student ke apne registered email pe (jo unhone registration ke time diya tha):
+    1) approaching deadline wali drives ke liye eligible-but-not-applied students
+    2) jinka interview schedule ho chuka hai unhe interview reminder"""
     window = current_app.config['REMINDER_WINDOW_DAYS']
     today = date.today()
     cutoff = today + timedelta(days=window)
 
+    sent = 0
+
+    # --- 1) deadline reminders ---
     open_drives = Drive.query.filter_by(status='Approved').all()
     upcoming = [d for d in open_drives if d.deadline and today <= _parse(d.deadline) <= cutoff]
 
-    sent = 0
     for drive in upcoming:
         applied_student_ids = {a.student_id for a in drive.applications}
         for student in Student.query.filter_by(is_blacklisted=0).all():
             if student.id in applied_student_ids:
                 continue
+            if not student.email:
+                continue  # email hi nahi hai to bhej nahi sakte
             eligible, _ = drive.is_eligible(student)
             if not eligible:
                 continue
-            text = (f"Reminder: '{drive.drive_name}' ({drive.jobtitle}) at "
-                    f"{drive.company.cname} closes on {drive.deadline}. Apply before it's too late!")
-            send_gchat_message(f"[{student.name}] {text}")
+
+            subject = f"Deadline Reminder: {drive.drive_name} closes soon"
+            html = f"""
+            <p>Hi {student.name},</p>
+            <p>The drive <strong>{drive.drive_name}</strong> ({drive.jobtitle}) at
+            <strong>{drive.company.cname}</strong> closes on <strong>{drive.deadline}</strong>.
+            You're eligible for it but haven't applied yet — apply before it's too late!</p>
+            <p>- Placement Cell</p>
+            """
+            send_email(student.email, subject, html)
             sent += 1
 
-    return f"Sent {sent} deadline reminders for {len(upcoming)} drives"
+    # --- 2) interview reminders - jinka status Interview hai aur interview_date aane wali hai ---
+    interview_apps = Application.query.filter_by(status='Interview').all()
+    for appl in interview_apps:
+        if not appl.interview_date or not appl.student.email:
+            continue
+        idate = _parse(appl.interview_date)
+        if today <= idate <= cutoff:
+            subject = f"Interview Reminder: {appl.drive.drive_name}"
+            html = f"""
+            <p>Hi {appl.student.name},</p>
+            <p>Your interview for <strong>{appl.drive.drive_name}</strong> at
+            <strong>{appl.drive.company.cname}</strong> is scheduled on
+            <strong>{appl.interview_date}</strong>.</p>
+            <p>All the best!</p>
+            <p>- Placement Cell</p>
+            """
+            send_email(appl.student.email, subject, html)
+            sent += 1
+
+    return f"Sent {sent} reminders ({len(upcoming)} drives closing soon, {len(interview_apps)} interviews checked)"
 
 
 def _parse(d_str):
@@ -45,7 +77,7 @@ def _parse(d_str):
 
 @celery.task(name='tasks.generate_monthly_report')
 def generate_monthly_report():
-    """Celery Beat monthly job (1st of month) — HTML placement activity report to admin."""
+    """Celery Beat monthly job (1st tareek) — admin ko HTML report email karta hai."""
     today = date.today()
     first_of_month = today.replace(day=1)
     last_month_end = first_of_month - timedelta(days=1)
@@ -78,7 +110,7 @@ def generate_monthly_report():
 
 @celery.task(name='tasks.export_applications_csv')
 def export_applications_csv(student_id: int):
-    """User-triggered async job — exports a student's application history as CSV."""
+    """User-triggered async job — student ki application history CSV me export karta hai."""
     student = Student.query.get(student_id)
     if not student:
         raise ValueError('Student not found')
@@ -100,5 +132,6 @@ def export_applications_csv(student_id: int):
                 a.applied_date,
             ])
 
+    # export complete hone ka alert - abhi bhi gchat pe (koi bhi channel chalega spec ke hisaab se)
     send_gchat_message(f"[{student.name}] Your application export is ready: {filename}")
     return filename

@@ -139,6 +139,7 @@ const ApplicantsView = {
                             <option>Applied</option><option>Shortlisted</option><option>Interview</option><option>Selected</option><option>Rejected</option>
                         </select>
                         <input type="date" class="form-control form-control-sm mb-1" v-model="a._interview_date" title="interview date, sirf 'Interview' status ke liye">
+                        <input class="form-control form-control-sm mb-1" v-model="a._feedback" placeholder="feedback for student">
                         <button class="btn btn-sm btn-gold" @click="update(a)">Update</button>
                     </td>
                 </tr>
@@ -153,12 +154,12 @@ const ApplicantsView = {
         async load() {
             const did = this.$route.params.id;
             const { data } = await api.get(`/company/drives/${did}/applicants`);
-            this.applicants = data.map(a => ({ ...a, _status: a.status, _interview_date: a.interview_date || '' }));
+            this.applicants = data.map(a => ({ ...a, _status: a.status, _interview_date: a.interview_date || '', _feedback: a.feedback || '' }));
             const drives = await api.get('/company/drives');
             this.drive = drives.data.find(d => d.id == did);
         },
         async update(a) {
-            await api.put(`/company/applications/${a.id}`, { status: a._status, interview_date: a._interview_date });
+            await api.put(`/company/applications/${a.id}`, { status: a._status, interview_date: a._interview_date, feedback: a._feedback });
             await this.load();
         }
     }
