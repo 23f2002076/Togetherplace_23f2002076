@@ -7,8 +7,6 @@ from extensions import db, jwt, cache, celery
 from models import User
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-# frontend folder ek level upar hai (ppa/frontend), backend se serve kar denge
-# taki alag se koi node/http server na chalana pade aur CORS ki bhi zarurat na pade
 FRONTEND_DIR = os.path.join(BASE_DIR, '..', 'frontend')
 
 
@@ -23,7 +21,6 @@ def create_app():
     jwt.init_app(app)
     cache.init_app(app)
 
-    # celery ko flask app context ke andar chalate hai taki db aur current_app dono kaam karein
     celery.conf.update(
         broker_url=app.config['CELERY_BROKER_URL'],
         result_backend=app.config['CELERY_RESULT_BACKEND'],
@@ -31,11 +28,11 @@ def create_app():
         beat_schedule={
             'daily-deadline-reminders': {
                 'task': 'tasks.send_deadline_reminders',
-                'schedule': crontab(hour=9, minute=0),  # roz subah 9 baje
+                'schedule': crontab(hour=9, minute=0),  
             },
             'monthly-placement-report': {
                 'task': 'tasks.generate_monthly_report',
-                'schedule': crontab(hour=6, minute=0, day_of_month=1),  # mahine ki 1 tareek
+                'schedule': crontab(hour=6, minute=0, day_of_month=1),  
             },
         },
     )
@@ -47,7 +44,6 @@ def create_app():
 
     celery.Task = ContextTask
 
-    # sare API blueprints yaha register honge
     from auth import auth_bp
     from routes_admin import admin_bp
     from routes_company import company_bp
@@ -58,7 +54,7 @@ def create_app():
     app.register_blueprint(company_bp)
     app.register_blueprint(student_bp)
 
-    # vue ki spa files yahi se serve hongi - same origin pe hai to CORS ki jarurat nahi
+
     @app.route('/')
     def serve_index():
         return send_from_directory(FRONTEND_DIR, 'index.html')
@@ -69,7 +65,7 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        # admin user pehle se nahi hai to bana do, register ka option kahi nahi diya
+
         if not User.query.filter_by(username='admin').first():
             admin = User(username='admin', role='admin')
             admin.set_password('admin@123')
