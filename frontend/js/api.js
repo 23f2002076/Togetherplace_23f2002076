@@ -1,4 +1,3 @@
-// flask hi frontend serve kar raha hai, isliye same origin - relative path chalega
 const API_BASE = '/api';
 
 const api = axios.create({ baseURL: API_BASE });
