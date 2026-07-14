@@ -119,14 +119,16 @@ def export_applications_csv(student_id: int):
 
     with open(filepath, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Student ID', 'Company Name', 'Drive Title', 'Application Status', 'Applied Date', 'Interview Date', 'Feedback', 'Joining Date'])
+        writer.writerow(['Student ID', 'Company Name', 'Drive Title', 'Application Status', 'Applied Date', 'Interview Date', 'Feedback', 'Joining Date', 'Salary'])
         for a in student.applications:
             joining_date = ''
+            salary = ''
             if a.status == 'Selected':
                 from models import Placement
                 plc = Placement.query.filter_by(student_id=student.id, drive_id=a.drive_id).first()
                 if plc:
                     joining_date = plc.joining_date or ''
+                    salary = plc.salary or ''
             
             writer.writerow([
                 student.id,
@@ -137,6 +139,7 @@ def export_applications_csv(student_id: int):
                 a.interview_date or '',
                 a.feedback or '',
                 joining_date,
+                salary,
             ])
 
     send_gchat_message(f"[{student.name}] Your application export is ready: {filename}")

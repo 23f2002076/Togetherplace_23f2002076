@@ -153,7 +153,7 @@ const StudentHistoryView = {
                 await new Promise(r => setTimeout(r, 1000));
                 const { data } = await api.get(`/student/export/status/${taskId}`);
                 if (data.state === 'SUCCESS') {
-                    this.exportMsg = 'Export ready — downloading...';
+                    this.exportMsg = '';
                     const a = document.createElement('a');
                     a.href = `/static/exports/${data.filename}`;
                     a.download = data.filename;
