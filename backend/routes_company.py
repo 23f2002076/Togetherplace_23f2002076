@@ -8,7 +8,6 @@ from models import Company, Drive, Application, Placement
 company_bp = Blueprint('company', __name__, url_prefix='/api/company')
 
 
-# logged in company ka profile nikalne ka helper, har route me use hoga
 def mycompany():
     uid = int(get_jwt_identity())
     return Company.query.filter_by(user_id=uid).first()
@@ -18,7 +17,7 @@ def mycompany():
 @jwt_required()
 def get_me():
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     return jsonify(mycompany().to_dict())
 
 
@@ -26,7 +25,7 @@ def get_me():
 @jwt_required()
 def update_me():
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     data = request.json or {}
     for f in ('cname', 'hr', 'website', 'industry'):
@@ -40,7 +39,7 @@ def update_me():
 @jwt_required()
 def my_drives():
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     return jsonify([d.to_dict(include_company=False) for d in Drive.query.filter_by(company_id=comp.id).all()])
 
@@ -49,18 +48,17 @@ def my_drives():
 @jwt_required()
 def create_drive():
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
 
-    # admin se approval liye bina drive nahi bana sakti company
     if comp.approval != 'Approved':
         return jsonify({'error': 'pehle admin approval lo'}), 403
 
     data = request.json or {}
     if not data.get('drive_name') or not data.get('jobtitle') or not data.get('deadline'):
-        return jsonify({'error': 'drive_name, jobtitle aur deadline zaruri hai'}), 400
+        return jsonify({'error': 'drive_name, jobtitle and deadline are required'}), 400
     if data['deadline'] < str(date.today()):
-        return jsonify({'error': 'deadline past me nahi ho sakti'}), 400
+        return jsonify({'error': 'deadline cannot be in the past'}), 400
 
     drv = Drive(
         company_id=comp.id,
@@ -88,11 +86,11 @@ def create_drive():
 @jwt_required()
 def edit_drive(did):
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     drv = Drive.query.get_or_404(did)
     if drv.company_id != comp.id:
-        return jsonify({'error': 'ye drive aapki nahi hai'}), 403
+        return jsonify({'error': 'this drive does not belong to your company'}), 403
 
     data = request.json or {}
     for f in ('drive_name', 'jobtitle', 'jobdescription', 'eligible', 'skills_required',
@@ -112,43 +110,43 @@ def edit_drive(did):
 @jwt_required()
 def close_drive(did):
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     drv = Drive.query.get_or_404(did)
     if drv.company_id != comp.id:
-        return jsonify({'error': 'ye drive aapki nahi hai'}), 403
+        return jsonify({'error': 'this drive does not belong to your company'}), 403
     drv.status = 'Closed'
     db.session.commit()
     cache.delete('open_drives_list')
-    return jsonify({'message': 'drive band kardi'})
+    return jsonify({'message': 'drive has been closed'})
 
 
 @company_bp.delete('/drives/<int:did>')
 @jwt_required()
 def delete_drive(did):
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     drv = Drive.query.get_or_404(did)
     if drv.company_id != comp.id:
-        return jsonify({'error': 'ye drive aapki nahi hai'}), 403
+        return jsonify({'error': 'this drive does not belong to your company'}), 403
     Application.query.filter_by(drive_id=did).delete()
     db.session.delete(drv)
     db.session.commit()
     cache.delete('admin_dashboard_stats')
     cache.delete('open_drives_list')
-    return jsonify({'message': 'drive delete ho gayi'})
+    return jsonify({'message': 'drive has been deleted'})
 
 
 @company_bp.get('/drives/<int:did>/applicants')
 @jwt_required()
 def view_applicants(did):
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     drv = Drive.query.get_or_404(did)
     if drv.company_id != comp.id:
-        return jsonify({'error': 'ye drive aapki nahi hai'}), 403
+        return jsonify({'error': 'this drive does not belong to your company'}), 403
 
     apps = Application.query.filter_by(drive_id=did).all()
     result = []
@@ -163,17 +161,17 @@ def view_applicants(did):
 @jwt_required()
 def update_appstatus(app_id):
     if get_jwt()['role'] != 'company':
-        return jsonify({'error': 'sirf company access kar sakti hai'}), 403
+        return jsonify({'error': 'only company can do this'}), 403
     comp = mycompany()
     appl = Application.query.get_or_404(app_id)
     if appl.drive.company_id != comp.id:
-        return jsonify({'error': 'ye application aapki drive ki nahi hai'}), 403
+        return jsonify({'error': 'this application does not belong to your drive'}), 403
 
     data = request.json or {}
     newstatus = data.get('status')
     allowed = {'Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected'}
     if newstatus not in allowed:
-        return jsonify({'error': f'status ye hona chahiye: {allowed}'}), 400
+        return jsonify({'error': f'status must be one of: {allowed}'}), 400
 
     appl.status = newstatus
     if 'interview_date' in data:
@@ -181,7 +179,6 @@ def update_appstatus(app_id):
     if 'feedback' in data:
         appl.feedback = data['feedback']
 
-    # student final select hua to placement record bhi bana do, history ke liye chahiye
     if newstatus == 'Selected':
         already = Placement.query.filter_by(student_id=appl.student_id, drive_id=appl.drive_id).first()
         if not already:
