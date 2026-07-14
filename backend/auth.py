@@ -9,7 +9,6 @@ from models import User, Student, Company
 auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
 
-# student register karega yaha se, form ya json dono chalega
 @auth_bp.post('/register/student')
 def register_student():
     data = request.form if request.form else request.json or {}
@@ -17,24 +16,23 @@ def register_student():
     uname = data.get('username', '').strip()
     pwd = data.get('password', '')
     if not uname or not pwd:
-        return jsonify({'error': 'username aur password dono chahiye'}), 400
+        return jsonify({'error': 'required username and password'}), 400
 
-    # duplicate username check
+
     if User.query.filter_by(username=uname).first():
-        return jsonify({'error': 'ye username already liya hua hai'}), 409
+        return jsonify({'error': 'this username is already taken'}), 409
 
-    # cgpa 0-10 ke beech honi chahiye warna galat data chala jayega
     try:
         cgpa = float(data.get('cgpa') or 0)
     except ValueError:
-        return jsonify({'error': 'cgpa number me daalo'}), 400
+        return jsonify({'error': 'cgpa must be a number'}), 400
     if cgpa < 0 or cgpa > 10:
-        return jsonify({'error': 'cgpa 0 se 10 ke beech honi chahiye'}), 400
+        return jsonify({'error': 'cgpa must be between 0 and 10'}), 400
 
     newuser = User(username=uname, role='student')
     newuser.set_password(pwd)
     db.session.add(newuser)
-    db.session.flush()  # id abhi ke liye chahiye
+    db.session.flush()  
 
     stud = Student(
         user_id=newuser.id,
@@ -47,7 +45,6 @@ def register_student():
         skills=data.get('skills'),
     )
 
-    # resume file aya hai to save kardo
     if 'resume' in request.files:
         resumefile = request.files['resume']
         if resumefile.filename:
@@ -60,7 +57,6 @@ def register_student():
     return jsonify({'message': 'Registration ho gaya, ab login karlo'}), 201
 
 
-# company register karegi, admin approval baad me lagega login pe
 @auth_bp.post('/register/company')
 def register_company():
     data = request.form if request.form else request.json or {}
@@ -68,9 +64,9 @@ def register_company():
     uname = data.get('username', '').strip()
     pwd = data.get('password', '')
     if not uname or not pwd:
-        return jsonify({'error': 'username aur password dono chahiye'}), 400
+        return jsonify({'error': 'required username and password'}), 400
     if User.query.filter_by(username=uname).first():
-        return jsonify({'error': 'ye username already liya hua hai'}), 409
+        return jsonify({'error': 'this username is already taken'}), 409
 
     newuser = User(username=uname, role='company')
     newuser.set_password(pwd)
@@ -86,7 +82,7 @@ def register_company():
     )
     db.session.add(comp)
     db.session.commit()
-    return jsonify({'message': 'Registration ho gaya, admin approval ka wait karo'}), 201
+    return jsonify({'message': 'Company registered successfully , wait for admin approval'}), 201
 
 
 @auth_bp.post('/login')
@@ -97,20 +93,17 @@ def login():
 
     user = User.query.filter_by(username=uname).first()
     if not user or not user.check_password(pwd):
-        return jsonify({'error': 'username ya password galat hai'}), 401
+        return jsonify({'error': 'username or password is incorrect'}), 401
 
-    # blacklist wale student ko andar mat aane do
     if user.role == 'student' and user.student and user.student.is_blacklisted:
-        return jsonify({'error': 'aapka account blacklist ho chuka hai, admin se baat karo'}), 403
+        return jsonify({'error': 'your account is blacklisted, please contact admin'}), 403
 
-    # company blacklist ya abhi approve nahi hui to bhi mat ghusne do
     if user.role == 'company' and user.company:
         if user.company.is_blacklisted:
-            return jsonify({'error': 'aapki company blacklist hai, admin se baat karo'}), 403
+            return jsonify({'error': 'your company is blacklisted, please contact admin'}), 403
         if user.company.approval != 'Approved':
-            return jsonify({'error': 'aapki company abhi approved nahi hui'}), 403
+            return jsonify({'error': 'your company is not yet approved'}), 403
 
-    # jwt token banake bhej do, role bhi claim me daal diya taki har route pe check ho sake
     token = create_access_token(
         identity=str(user.id),
         additional_claims={'role': user.role, 'username': user.username},
