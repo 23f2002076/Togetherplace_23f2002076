@@ -1,5 +1,3 @@
-# Togetherplace
-
 ## How to Run Locally
 
 You will need to open 4 separate terminal windows to run all components of this application locally on Windows.
