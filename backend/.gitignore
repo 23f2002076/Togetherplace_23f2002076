@@ -7,3 +7,4 @@ static/uploads/*
 static/exports/*
 !static/exports/.gitkeep
 .env
+celerybeat-schedule*
