@@ -27,7 +27,7 @@ const CompanyDashboardView = {
                     <td>{{ d.id }}</td><td>{{ d.drive_name }}</td><td>{{ d.jobtitle }}</td><td>{{ d.deadline }}</td>
                     <td>{{ d.status }}</td><td>{{ d.applicant_count }}</td>
                     <td>
-                        <router-link :to="'/company/drive/'+d.id+'/applicants'" class="btn btn-sm btn-success">Applicants</router-link>
+                        <router-link v-if="d.status!=='Rejected'" :to="'/company/drive/'+d.id+'/applicants'" class="btn btn-sm btn-success">Applicants</router-link>
                         <template v-if="d.status!=='Rejected' && d.status!=='Closed'">
                             <router-link :to="'/company/drive/'+d.id+'/edit'" class="btn btn-sm btn-info text-white">Edit</router-link>
                             <button class="btn btn-sm btn-warning" @click="closeDrive(d.id)">Close</button>
@@ -63,7 +63,7 @@ const driveFormTemplate = `
             <div class="row">
                 <div class="col-md-4 mb-2"><label class="form-label">Min CGPA</label><input type="number" step="0.1" min="0" max="10" class="form-control" v-model="form.min_cgpa"></div>
                 <div class="col-md-4 mb-2"><label class="form-label">Max Backlogs Allowed</label><input type="number" min="0" class="form-control" v-model="form.max_backlogs"></div>
-                <div class="col-md-4 mb-2"><label class="form-label">Eligible Branches (none checked = all)</label>
+                <div class="col-md-4 mb-2"><label class="form-label">Eligible Branches (Leave empty to allow all)</label>
                     <div class="border rounded p-2">
                         <div class="form-check" v-for="b in BRANCH_OPTIONS" :key="b.value">
                             <input class="form-check-input" type="checkbox" :id="'branch-'+b.value" :value="b.value" v-model="form.eligible_branches_list">
@@ -151,9 +151,9 @@ const ApplicantsView = {
                         <select class="form-select form-select-sm mb-1" v-model="a._status">
                             <option>Applied</option><option>Shortlisted</option><option>Interview</option><option>Selected</option><option>Rejected</option>
                         </select>
-                        <input type="date" class="form-control form-control-sm mb-1" v-model="a._interview_date" title="interview date, sirf 'Interview' status ke liye">
+                        <input v-if="a._status === 'Interview'" type="date" class="form-control form-control-sm mb-1" v-model="a._interview_date" title="interview date">
                         <input class="form-control form-control-sm mb-1" v-model="a._feedback" placeholder="feedback for student">
-                        <input type="date" class="form-control form-control-sm mb-1" v-model="a._joining_date" title="joining date, sirf 'Selected' status ke liye" placeholder="joining date">
+                        <input v-if="a._status === 'Selected'" type="date" class="form-control form-control-sm mb-1" v-model="a._joining_date" title="joining date">
                         <button class="btn btn-sm btn-gold" @click="update(a)">Update</button>
                     </td>
                 </tr>

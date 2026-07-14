@@ -84,11 +84,12 @@ const AdminDashboardView = {
         <div class="ppa-panel">
             <h5 class="ppa-title">All Companies</h5>
             <table class="table table-sm">
-                <thead><tr><th>ID</th><th>Company</th><th>HR</th><th>Approval</th><th>Status</th><th>Action</th></tr></thead>
+                <thead><tr><th>ID</th><th>Company</th><th>HR</th><th>Approval</th><th>Account Status</th><th>Action</th></tr></thead>
                 <tbody>
                 <tr v-for="c in companies" :key="c.id">
-                    <td>{{ c.id }}</td><td>{{ c.cname }}</td><td>{{ c.hr }}</td><td>{{ c.approval }}</td>
-                    <td><span class="badge" :class="c.is_blacklisted ? 'bg-danger' : 'bg-success'">{{ c.is_blacklisted ? 'Blacklisted' : 'Active' }}</span></td>
+                    <td>{{ c.id }}</td><td>{{ c.cname }}</td><td>{{ c.hr }}</td>
+                    <td><span class="badge" :class="c.approval === 'Approved' ? 'bg-success' : (c.approval === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark')">{{ c.approval }}</span></td>
+                    <td><span class="badge" :class="c.is_blacklisted ? 'bg-dark' : 'bg-success'">{{ c.is_blacklisted ? 'Blacklisted' : 'Active' }}</span></td>
                     <td>
                         <button class="btn btn-sm" :class="c.is_blacklisted ? 'btn-success' : 'btn-danger'" @click="toggleCompanyBlacklist(c)">{{ c.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}</button>
                         <button class="btn btn-sm btn-outline-danger" @click="deleteCompany(c.id)">Delete</button>

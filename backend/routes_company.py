@@ -191,6 +191,11 @@ def update_appstatus(app_id):
                 joining_date=data.get('joining_date', ''),
                 created_at=str(date.today()),
             ))
+        else:
+            if 'joining_date' in data:
+                already.joining_date = data['joining_date']
+    else:
+        Placement.query.filter_by(student_id=appl.student_id, drive_id=appl.drive_id).delete()
 
     db.session.commit()
     return jsonify(appl.to_dict())

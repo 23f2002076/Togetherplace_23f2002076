@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt
 
 from extensions import db, cache
-from models import User, Student, Company, Drive, Application
+from models import User, Student, Company, Drive, Application, Placement
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -133,6 +133,8 @@ def delete_comp(cid):
     for drv in comp.drives:
         Application.query.filter_by(drive_id=drv.id).delete()
         db.session.delete(drv)
+    
+    Placement.query.filter_by(company_id=cid).delete()
     db.session.delete(comp)
     if user:
         db.session.delete(user)
