@@ -7,5 +7,4 @@ db = SQLAlchemy()
 jwt = JWTManager()
 cache = Cache()
 
-# Celery instance is configured (broker/backend) inside app factory via celery.conf.update
 celery = Celery(__name__)
