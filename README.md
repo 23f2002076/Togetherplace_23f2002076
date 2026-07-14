@@ -1,15 +1,37 @@
-1. redis-server --daemonize yes    (Windows: run inside WSL)
+# Placement Portal Application (PPA-V2)
 
-2. cd backend
-   python -m venv venv
-   venv\Scripts\activate            (Windows)
-   source venv/bin/activate         (Linux/Mac)
-   pip install -r requirements.txt
+## How to Run Locally
 
-3. python app.py
-   open http://localhost:5001
-   admin login: admin / admin@123
+You will need to open 4 separate terminal windows to run all components of this application locally on Windows.
 
-4. (optional, for background jobs) two more terminals, same venv:
-   celery -A celery_worker.celery worker --loglevel=info
-   celery -A celery_worker.celery beat --loglevel=info
+### Terminal 1: Redis Server (Database Cache)
+*Since Redis runs natively on Linux, use WSL to start it in the background.*
+```powershell
+wsl -e sudo service redis-server start
+wsl -e redis-server --daemonize yes
+```
+
+### Terminal 2: Web Server (Flask + Vue)
+*This runs the main website backend and serves the frontend.*
+```powershell
+cd backend
+.\venv\Scripts\activate
+python app.py
+```
+*Once running, open your browser and go to **http://localhost:5001**.*
+
+### Terminal 3: Celery Worker (Heavy Background Tasks)
+*This handles generating CSV exports and sending emails.*
+```powershell
+cd backend
+.\venv\Scripts\activate
+celery -A celery_worker.celery worker --loglevel=info --pool=solo
+```
+
+### Terminal 4: Celery Beat (Time-based Scheduler)
+*This triggers periodic tasks like your daily reminders.*
+```powershell
+cd backend
+.\venv\Scripts\activate
+celery -A celery_worker.celery beat --loglevel=info
+```
