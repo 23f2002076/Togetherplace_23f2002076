@@ -6,7 +6,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # admin / company / student
+    role = db.Column(db.String(20), nullable=False)  
 
     student = db.relationship('Student', backref='user', uselist=False, cascade='all, delete-orphan')
     company = db.relationship('Company', backref='user', uselist=False, cascade='all, delete-orphan')
@@ -70,19 +70,19 @@ class Drive(db.Model):
     jobtitle = db.Column(db.String(100))
     jobdescription = db.Column(db.Text)
 
-    # free-text summary shown to students, kept from MAD-1
+    
     eligible = db.Column(db.String(200))
     # structured eligibility, used for actual server-side validation
     min_cgpa = db.Column(db.Float, default=0)
     max_backlogs = db.Column(db.Integer, default=99)
-    eligible_branches = db.Column(db.String(300), default='')  # comma-separated, blank = all branches
+    eligible_branches = db.Column(db.String(300), default='')  
 
     skills_required = db.Column(db.String(200))
     experience = db.Column(db.String(100))
     deadline = db.Column(db.String(50))
     salary = db.Column(db.String(100))
     location = db.Column(db.String(100))
-    status = db.Column(db.String(20), default='Pending')  # Pending / Approved / Rejected / Closed
+    status = db.Column(db.String(20), default='Pending') 
 
     applications = db.relationship('Application', backref='drive', lazy=True, cascade='all, delete-orphan')
 
@@ -118,7 +118,7 @@ class Application(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     drive_id = db.Column(db.Integer, db.ForeignKey('drive.id'), nullable=False)
     applied_date = db.Column(db.String(50))
-    status = db.Column(db.String(20), default='Applied')  # Applied/Shortlisted/Interview/Selected/Rejected
+    status = db.Column(db.String(20), default='Applied')  
     interview_date = db.Column(db.String(50))
     feedback = db.Column(db.String(300))
 
