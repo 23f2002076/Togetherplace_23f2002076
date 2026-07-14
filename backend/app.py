@@ -44,10 +44,10 @@ def create_app():
 
     celery.Task = ContextTask
 
-    from auth import auth_bp
-    from routes_admin import admin_bp
-    from routes_company import company_bp
-    from routes_student import student_bp
+    from routes.auth import auth_bp
+    from routes.routes_admin import admin_bp
+    from routes.routes_company import company_bp
+    from routes.routes_student import student_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
