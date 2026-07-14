@@ -63,7 +63,14 @@ const driveFormTemplate = `
             <div class="row">
                 <div class="col-md-4 mb-2"><label class="form-label">Min CGPA</label><input type="number" step="0.1" min="0" max="10" class="form-control" v-model="form.min_cgpa"></div>
                 <div class="col-md-4 mb-2"><label class="form-label">Max Backlogs Allowed</label><input type="number" min="0" class="form-control" v-model="form.max_backlogs"></div>
-                <div class="col-md-4 mb-2"><label class="form-label">Eligible Branches</label><input class="form-control" v-model="form.eligible_branches" placeholder="cse,it (blank = all)"></div>
+                <div class="col-md-4 mb-2"><label class="form-label">Eligible Branches (none checked = all)</label>
+                    <div class="border rounded p-2">
+                        <div class="form-check" v-for="b in BRANCH_OPTIONS" :key="b.value">
+                            <input class="form-check-input" type="checkbox" :id="'branch-'+b.value" :value="b.value" v-model="form.eligible_branches_list">
+                            <label class="form-check-label" :for="'branch-'+b.value">{{ b.label }}</label>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="mb-2"><label class="form-label">Skills Required</label><input class="form-control" v-model="form.skills_required"></div>
             <div class="mb-2"><label class="form-label">Experience</label><input class="form-control" v-model="form.experience"></div>
@@ -81,14 +88,16 @@ const NewDriveView = {
     data() {
         return {
             isEdit: false, loading: false, error: '',
-            form: { drive_name: '', jobtitle: '', jobdescription: '', eligible: '', min_cgpa: 0, max_backlogs: 99, eligible_branches: '', skills_required: '', experience: '', deadline: '', salary: '', location: '' }
+            form: { drive_name: '', jobtitle: '', jobdescription: '', eligible: '', min_cgpa: 0, max_backlogs: 99, eligible_branches_list: [], skills_required: '', experience: '', deadline: '', salary: '', location: '' }
         };
     },
     methods: {
         async submit() {
             this.error = ''; this.loading = true;
             try {
-                await api.post('/company/drives', this.form);
+                
+                const payload = { ...this.form, eligible_branches: this.form.eligible_branches_list.join(',') };
+                await api.post('/company/drives', payload);
                 this.$router.push('/company');
             } catch (err) {
                 this.error = apiErrorMsg(err);
@@ -103,13 +112,17 @@ const EditDriveView = {
     data() { return { isEdit: true, loading: false, error: '', form: {} }; },
     async mounted() {
         const { data } = await api.get('/company/drives');
-        this.form = data.find(d => d.id == this.$route.params.id);
+        const drive = data.find(d => d.id == this.$route.params.id);
+        // comma-separated string ko checkbox array me todo
+        drive.eligible_branches_list = (drive.eligible_branches || '').split(',').map(s => s.trim()).filter(Boolean);
+        this.form = drive;
     },
     methods: {
         async submit() {
             this.error = ''; this.loading = true;
             try {
-                await api.put(`/company/drives/${this.$route.params.id}`, this.form);
+                const payload = { ...this.form, eligible_branches: this.form.eligible_branches_list.join(',') };
+                await api.put(`/company/drives/${this.$route.params.id}`, payload);
                 this.$router.push('/company');
             } catch (err) {
                 this.error = apiErrorMsg(err);
@@ -140,6 +153,7 @@ const ApplicantsView = {
                         </select>
                         <input type="date" class="form-control form-control-sm mb-1" v-model="a._interview_date" title="interview date, sirf 'Interview' status ke liye">
                         <input class="form-control form-control-sm mb-1" v-model="a._feedback" placeholder="feedback for student">
+                        <input type="date" class="form-control form-control-sm mb-1" v-model="a._joining_date" title="joining date, sirf 'Selected' status ke liye" placeholder="joining date">
                         <button class="btn btn-sm btn-gold" @click="update(a)">Update</button>
                     </td>
                 </tr>
@@ -154,12 +168,12 @@ const ApplicantsView = {
         async load() {
             const did = this.$route.params.id;
             const { data } = await api.get(`/company/drives/${did}/applicants`);
-            this.applicants = data.map(a => ({ ...a, _status: a.status, _interview_date: a.interview_date || '', _feedback: a.feedback || '' }));
+            this.applicants = data.map(a => ({ ...a, _status: a.status, _interview_date: a.interview_date || '', _feedback: a.feedback || '', _joining_date: '' }));
             const drives = await api.get('/company/drives');
             this.drive = drives.data.find(d => d.id == did);
         },
         async update(a) {
-            await api.put(`/company/applications/${a.id}`, { status: a._status, interview_date: a._interview_date, feedback: a._feedback });
+            await api.put(`/company/applications/${a.id}`, { status: a._status, interview_date: a._interview_date, feedback: a._feedback, joining_date: a._joining_date });
             await this.load();
         }
     }
