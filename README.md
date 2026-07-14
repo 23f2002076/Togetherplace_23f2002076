@@ -1,4 +1,4 @@
-# Placement Portal Application (PPA-V2)
+# Togetherplace
 
 ## How to Run Locally
 
