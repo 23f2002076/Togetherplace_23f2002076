@@ -8,5 +8,6 @@ const App = {
 };
 
 const app = Vue.createApp(App);
+app.config.globalProperties.BRANCH_OPTIONS = BRANCH_OPTIONS;
 app.use(router);
 app.mount('#app');
