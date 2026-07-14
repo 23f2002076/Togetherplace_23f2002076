@@ -6,6 +6,8 @@ from models import User, Student, Company, Drive, Application
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
+
+# dashboard cache ko purana pad dete hi hata do warna galat count dikhega
 def clear_dash_cache():
     cache.delete('admin_dashboard_stats')
 
@@ -15,7 +17,7 @@ def clear_dash_cache():
 @cache.cached(timeout=30, key_prefix='admin_dashboard_stats')
 def dashboard():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
 
     return jsonify({
         'total_students': Student.query.count(),
@@ -31,7 +33,7 @@ def dashboard():
 @jwt_required()
 def list_students():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
     return jsonify([s.to_dict() for s in Student.query.all()])
 
 
@@ -39,7 +41,7 @@ def list_students():
 @jwt_required()
 def list_companies():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
     return jsonify([c.to_dict() for c in Company.query.all()])
 
 
@@ -47,7 +49,7 @@ def list_companies():
 @jwt_required()
 def list_drives():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
     return jsonify([d.to_dict() for d in Drive.query.all()])
 
 
@@ -55,15 +57,16 @@ def list_drives():
 @jwt_required()
 def list_applications():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
     return jsonify([a.to_dict() for a in Application.query.all()])
 
 
+# student aur company dono search yahi se, type query param se decide hota hai
 @admin_bp.get('/search')
 @jwt_required()
 def search():
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can access this'}), 403
+        return jsonify({'error': 'sirf admin dekh sakta hai'}), 403
 
     q = request.args.get('q', '')
     stype = request.args.get('type', 'student')
@@ -80,56 +83,56 @@ def search():
 @jwt_required()
 def approve_comp(cid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     comp = Company.query.get_or_404(cid)
     comp.approval = 'Approved'
     db.session.commit()
     clear_dash_cache()
-    return jsonify({'message': 'company approved'})
+    return jsonify({'message': 'company approve ho gayi'})
 
 
 @admin_bp.post('/company/<int:cid>/reject')
 @jwt_required()
 def reject_comp(cid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     comp = Company.query.get_or_404(cid)
     comp.approval = 'Rejected'
     db.session.commit()
     clear_dash_cache()
-    return jsonify({'message': 'company rejected'})
+    return jsonify({'message': 'company reject ho gayi'})
 
 
 @admin_bp.post('/company/<int:cid>/blacklist')
 @jwt_required()
 def blacklist_comp(cid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     comp = Company.query.get_or_404(cid)
     comp.is_blacklisted = 1
     db.session.commit()
-    return jsonify({'message': 'company blacklisted'})
+    return jsonify({'message': 'company blacklist ho gayi'})
 
 
 @admin_bp.post('/company/<int:cid>/unblacklist')
 @jwt_required()
 def unblacklist_comp(cid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     comp = Company.query.get_or_404(cid)
     comp.is_blacklisted = 0
     db.session.commit()
-    return jsonify({'message': 'company unblacklisted'})
+    return jsonify({'message': 'company unblacklist ho gayi'})
 
 
 @admin_bp.delete('/company/<int:cid>')
 @jwt_required()
 def delete_comp(cid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     comp = Company.query.get_or_404(cid)
     user = User.query.get(comp.user_id)
-    
+    # pehle drives aur unki applications hatani padengi, warna foreign key error aayega
     for drv in comp.drives:
         Application.query.filter_by(drive_id=drv.id).delete()
         db.session.delete(drv)
@@ -138,45 +141,45 @@ def delete_comp(cid):
         db.session.delete(user)
     db.session.commit()
     clear_dash_cache()
-    return jsonify({'message': 'company deleted'})
+    return jsonify({'message': 'company delete ho gayi'})
 
 
 @admin_bp.post('/student/<int:sid>/blacklist')
 @jwt_required()
 def blacklist_stud(sid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     stud = Student.query.get_or_404(sid)
     stud.is_blacklisted = 1
     db.session.commit()
-    return jsonify({'message': 'student blacklisted'})
+    return jsonify({'message': 'student blacklist ho gaya'})
 
 
 @admin_bp.post('/student/<int:sid>/unblacklist')
 @jwt_required()
 def unblacklist_stud(sid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     stud = Student.query.get_or_404(sid)
     stud.is_blacklisted = 0
     db.session.commit()
-    return jsonify({'message': 'student unblacklisted'})
+    return jsonify({'message': 'student unblacklist ho gaya'})
 
 
 @admin_bp.put('/student/<int:sid>')
 @jwt_required()
 def edit_stud(sid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     stud = Student.query.get_or_404(sid)
     data = request.json or {}
     if 'cgpa' in data:
         try:
             cgpa = float(data['cgpa'])
         except (TypeError, ValueError):
-            return jsonify({'error': 'cgpa must be a number'}), 400
+            return jsonify({'error': 'cgpa number me daalo'}), 400
         if cgpa < 0 or cgpa > 10:
-            return jsonify({'error': 'cgpa must be between 0 and 10'}), 400
+            return jsonify({'error': 'cgpa 0 se 10 ke beech honi chahiye'}), 400
         stud.cgpa = cgpa
     for f in ('name', 'email', 'phone', 'department', 'skills', 'backlogs'):
         if f in data:
@@ -189,7 +192,7 @@ def edit_stud(sid):
 @jwt_required()
 def delete_stud(sid):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     stud = Student.query.get_or_404(sid)
     user = User.query.get(stud.user_id)
     Application.query.filter_by(student_id=sid).delete()
@@ -198,44 +201,44 @@ def delete_stud(sid):
         db.session.delete(user)
     db.session.commit()
     clear_dash_cache()
-    return jsonify({'message': 'student deleted'})
+    return jsonify({'message': 'student delete ho gaya'})
 
 
 @admin_bp.post('/drive/<int:did>/approve')
 @jwt_required()
 def approve_driv(did):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     drv = Drive.query.get_or_404(did)
     drv.status = 'Approved'
     db.session.commit()
     clear_dash_cache()
     cache.delete('open_drives_list')
-    return jsonify({'message': 'drive approved'})
+    return jsonify({'message': 'drive approve ho gayi'})
 
 
 @admin_bp.post('/drive/<int:did>/reject')
 @jwt_required()
 def reject_driv(did):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     drv = Drive.query.get_or_404(did)
     drv.status = 'Rejected'
     db.session.commit()
     clear_dash_cache()
-    return jsonify({'message': 'drive rejected'})
+    return jsonify({'message': 'drive reject ho gayi'})
 
 
-
+# admin ko drive delete karne ka bhi haq hai, spec me likha hai "remove job posting"
 @admin_bp.delete('/drive/<int:did>')
 @jwt_required()
 def delete_driv(did):
     if get_jwt()['role'] != 'admin':
-        return jsonify({'error': 'only admin can perform this action'}), 403
+        return jsonify({'error': 'sirf admin kar sakta hai'}), 403
     drv = Drive.query.get_or_404(did)
     Application.query.filter_by(drive_id=did).delete()
     db.session.delete(drv)
     db.session.commit()
     clear_dash_cache()
     cache.delete('open_drives_list')
-    return jsonify({'message': 'drive has been deleted'})
+    return jsonify({'message': 'drive delete ho gayi'})
