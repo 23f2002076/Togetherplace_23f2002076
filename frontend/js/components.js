@@ -1,3 +1,11 @@
+const BRANCH_OPTIONS = [
+    { value: 'cse', label: 'CSE' },
+    { value: 'cyber', label: 'Cyber Security' },
+    { value: 'cloud', label: 'Cloud Computing' },
+    { value: 'ai', label: 'AI' },
+    { value: 'data science', label: 'Data Science' },
+];
+
 const NavBar = {
     template: `
     <nav class="navbar navbar-expand navbar-ppa px-3 mb-3">
