@@ -178,7 +178,12 @@ const StudentProfileView = {
             <div class="mb-2"><label class="form-label">Full Name</label><input class="form-control" v-model="form.name"></div>
             <div class="mb-2"><label class="form-label">Email</label><input type="email" class="form-control" v-model="form.email"></div>
             <div class="mb-2"><label class="form-label">Phone</label><input class="form-control" v-model="form.phone"></div>
-            <div class="mb-2"><label class="form-label">Department</label><input class="form-control" v-model="form.department"></div>
+            <div class="mb-2"><label class="form-label">Department</label>
+                <select class="form-control" v-model="form.department">
+                    <option value="" disabled>Select Branch</option>
+                    <option v-for="b in BRANCH_OPTIONS" :key="b.value" :value="b.value">{{ b.label }}</option>
+                </select>
+            </div>
             <div class="mb-2"><label class="form-label">CGPA</label><input type="number" step="0.01" min="0" max="10" class="form-control" v-model="form.cgpa"></div>
             <div class="mb-2"><label class="form-label">Backlogs</label><input type="number" min="0" class="form-control" v-model="form.backlogs"></div>
             <div class="mb-2"><label class="form-label">Skills</label><input class="form-control" v-model="form.skills"></div>
