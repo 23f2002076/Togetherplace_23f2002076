@@ -55,7 +55,11 @@ const AdminDashboardView = {
                     <template v-if="editingStudent === s.id">
                         <td>{{ s.id }}</td>
                         <td><input class="form-control form-control-sm" v-model="editForm.name"></td>
-                        <td><input class="form-control form-control-sm" v-model="editForm.department"></td>
+                        <td>
+                            <select class="form-control form-control-sm" v-model="editForm.department">
+                                <option v-for="b in BRANCH_OPTIONS" :key="b.value" :value="b.value">{{ b.label }}</option>
+                            </select>
+                        </td>
                         <td><input class="form-control form-control-sm" type="number" step="0.01" v-model="editForm.cgpa"></td>
                         <td></td>
                         <td>
@@ -136,7 +140,7 @@ const AdminDashboardView = {
             ]);
             this.stats = d.data; this.students = s.data; this.companies = c.data; this.applications = a.data; this.drives = drv.data;
         },
-        async deleteDrive(id) { if (confirm('Ye drive delete karni hai?')) { await api.delete(`/admin/drive/${id}`); await this.loadAll(); } },
+        async deleteDrive(id) { if (confirm('Want to delete this drive?')) { await api.delete(`/admin/drive/${id}`); await this.loadAll(); } },
         async approveCompany(id) { await api.post(`/admin/company/${id}/approve`); this.flash('Company approved'); await this.loadAll(); },
         async rejectCompany(id) { await api.post(`/admin/company/${id}/reject`); this.flash('Company rejected'); await this.loadAll(); },
         async approveDrive(id) { await api.post(`/admin/drive/${id}/approve`); this.flash('Drive approved'); await this.loadAll(); },
