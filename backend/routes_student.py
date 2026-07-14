@@ -1,6 +1,6 @@
 import os
 from datetime import date
-from flask import Blueprint, request, jsonify, current_app, send_from_directory
+from flask import Blueprint, request, jsonify, current_app
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import jwt_required, get_jwt, get_jwt_identity
 
@@ -19,7 +19,7 @@ def mystudent():
 @jwt_required()
 def get_me():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     return jsonify(mystudent().to_dict())
 
 
@@ -27,7 +27,7 @@ def get_me():
 @jwt_required()
 def update_me():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can perform this action'}), 403
     stud = mystudent()
     data = request.form if request.form else (request.json or {})
 
@@ -35,9 +35,9 @@ def update_me():
         try:
             cgpa = float(data['cgpa'])
         except (TypeError, ValueError):
-            return jsonify({'error': 'cgpa number me daalo'}), 400
+            return jsonify({'error': 'cgpa must be a number'}), 400
         if cgpa < 0 or cgpa > 10:
-            return jsonify({'error': 'cgpa 0 se 10 ke beech honi chahiye'}), 400
+            return jsonify({'error': 'cgpa must be between 0 and 10'}), 400
         stud.cgpa = cgpa
 
     for f in ('name', 'email', 'phone', 'department', 'skills', 'backlogs'):
@@ -55,16 +55,14 @@ def update_me():
     return jsonify(stud.to_dict())
 
 
-# student ke liye saari approved drives, eligible hai ya nahi wo bhi bata do
 @student_bp.get('/drives')
 @jwt_required()
 def open_drives():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     stud = mystudent()
 
-    # raw drive list cache kar rahe hai (30 sec), eligibility har student ke liye alag hai
-    # isliye wo cache ke bahar nikal ke fresh calculate karte hai
+
     cached = cache.get('open_drives_list')
     if cached is None:
         drives = Drive.query.filter_by(status='Approved').all()
@@ -90,7 +88,7 @@ def open_drives():
 @jwt_required()
 def view_drive(did):
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     stud = mystudent()
     drv = Drive.query.get_or_404(did)
     already = Application.query.filter_by(student_id=stud.id, drive_id=did).first() is not None
@@ -104,18 +102,18 @@ def view_drive(did):
 @jwt_required()
 def apply_drive(did):
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can perform this action'}), 403
     stud = mystudent()
     drv = Drive.query.get_or_404(did)
 
     if drv.status != 'Approved':
-        return jsonify({'error': 'ye drive abhi open nahi hai'}), 400
+        return jsonify({'error': 'this drive is not open yet'}), 400
     if drv.deadline and drv.deadline < str(date.today()):
-        return jsonify({'error': 'application deadline nikal gayi'}), 400
+        return jsonify({'error': 'application deadline has passed'}), 400
     if Application.query.filter_by(student_id=stud.id, drive_id=did).first():
-        return jsonify({'error': 'aap already apply kar chuke ho isme'}), 409
+        return jsonify({'error': 'you have already applied to this drive'}), 409
 
-    # yaha asli eligibility check hota hai - cgpa, backlog, branch sab
+
     ok, reason = drv.is_eligible(stud)
     if not ok:
         return jsonify({'error': f'eligible nahi ho: {reason}'}), 403
@@ -131,7 +129,7 @@ def apply_drive(did):
 @jwt_required()
 def my_applications():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     stud = mystudent()
     return jsonify([a.to_dict() for a in stud.applications])
 
@@ -140,7 +138,7 @@ def my_applications():
 @jwt_required()
 def history():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     stud = mystudent()
     return jsonify([a.to_dict() for a in stud.applications])
 
@@ -149,29 +147,26 @@ def history():
 @jwt_required()
 def placements():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     stud = mystudent()
     return jsonify([p.to_dict() for p in stud.placements])
-
-
-# --- yaha se celery wala async CSV export shuru hota hai ---
 
 @student_bp.post('/export/csv')
 @jwt_required()
 def trigger_export():
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     from tasks import export_applications_csv
     stud = mystudent()
     task = export_applications_csv.delay(stud.id)
-    return jsonify({'task_id': task.id, 'message': 'export shuru ho gaya, thoda ruko'}), 202
+    return jsonify({'task_id': task.id, 'message': 'export started, wait'}), 202
 
 
 @student_bp.get('/export/status/<task_id>')
 @jwt_required()
 def export_status(task_id):
     if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
+        return jsonify({'error': 'only student can access this'}), 403
     from tasks import celery
     task = celery.AsyncResult(task_id)
     out = {'state': task.state}
@@ -180,11 +175,3 @@ def export_status(task_id):
     elif task.state == 'FAILURE':
         out['error'] = str(task.info)
     return jsonify(out)
-
-
-@student_bp.get('/export/download/<filename>')
-@jwt_required()
-def download_export(filename):
-    if get_jwt()['role'] != 'student':
-        return jsonify({'error': 'sirf student access kar sakta hai'}), 403
-    return send_from_directory(current_app.config['EXPORT_FOLDER'], filename, as_attachment=True)
