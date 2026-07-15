@@ -110,9 +110,9 @@ def apply_drive(did):
         return jsonify({'error': 'this drive is not open yet'}), 400
     if drv.deadline and drv.deadline < str(date.today()):
         return jsonify({'error': 'application deadline has passed'}), 400
-    if Application.query.filter_by(student_id=stud.id, drive_id=did).first():
-        return jsonify({'error': 'you have already applied to this drive'}), 409
-
+    already = Application.query.filter_by(student_id=stud.id, drive_id=did).first()
+    if already:
+        return jsonify({'error': 'already applied'}), 400
 
     ok, reason = drv.is_eligible(stud)
     if not ok:
