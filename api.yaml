@@ -1,0 +1,257 @@
+openapi: 3.0.0
+info:
+  title: Togetherplace API
+  description: Placement portal application API for students, companies, and admins.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5001/api
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: User Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  role:
+                    type: string
+                  username:
+                    type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Account blacklisted or not approved
+
+  /auth/register/student:
+    post:
+      summary: Register a Student
+      security: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                name:
+                  type: string
+                email:
+                  type: string
+                department:
+                  type: string
+                cgpa:
+                  type: number
+                backlogs:
+                  type: integer
+                resume:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Registration successful
+
+  /auth/register/company:
+    post:
+      summary: Register a Company
+      security: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                cname:
+                  type: string
+                hr:
+                  type: string
+                website:
+                  type: string
+                industry:
+                  type: string
+      responses:
+        '201':
+          description: Registration successful (pending approval)
+
+  /admin/dashboard:
+    get:
+      summary: Admin Dashboard Statistics
+      responses:
+        '200':
+          description: Counts of students, companies, drives, and applications
+
+  /admin/companies:
+    get:
+      summary: Get all companies
+      responses:
+        '200':
+          description: List of companies
+
+  /admin/company/{cid}/status:
+    put:
+      summary: Approve or Reject a company
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Approved, Rejected]
+      responses:
+        '200':
+          description: Status updated
+
+  /admin/company/{cid}:
+    delete:
+      summary: Delete a company and all associated drives/applications/placements
+      parameters:
+        - in: path
+          name: cid
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Company deleted
+
+  /company/drive:
+    post:
+      summary: Create a placement drive
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                drive_name:
+                  type: string
+                jobtitle:
+                  type: string
+                jobdescription:
+                  type: string
+                min_cgpa:
+                  type: number
+                max_backlogs:
+                  type: integer
+                eligible_branches:
+                  type: string
+                skills_required:
+                  type: string
+                deadline:
+                  type: string
+                  format: date
+                salary:
+                  type: string
+                location:
+                  type: string
+      responses:
+        '201':
+          description: Drive created
+
+  /company/application/{appid}/status:
+    put:
+      summary: Update a student's application status
+      parameters:
+        - in: path
+          name: appid
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [Applied, Shortlisted, Interview, Selected, Rejected]
+                interview_date:
+                  type: string
+                feedback:
+                  type: string
+                joining_date:
+                  type: string
+      responses:
+        '200':
+          description: Application updated
+
+  /student/apply/{did}:
+    post:
+      summary: Apply to a drive
+      parameters:
+        - in: path
+          name: did
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Applied successfully
+        '403':
+          description: Ineligible or already applied
+
+  /student/export/csv:
+    post:
+      summary: Trigger CSV export of applications (Celery Task)
+      responses:
+        '202':
+          description: Task accepted, returns task_id
+
+  /student/export/status/{task_id}:
+    get:
+      summary: Poll export task status
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns state (PENDING, SUCCESS, FAILURE) and filename if SUCCESS
