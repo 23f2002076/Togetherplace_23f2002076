@@ -153,6 +153,10 @@ def view_applicants(did):
     for a in apps:
         item = a.to_dict()
         item['student'] = a.student.to_dict()
+        if a.status == 'Selected':
+            plc = Placement.query.filter_by(student_id=a.student_id, drive_id=a.drive_id).first()
+            if plc:
+                item['joining_date'] = plc.joining_date or ''
         result.append(item)
     return jsonify(result)
 

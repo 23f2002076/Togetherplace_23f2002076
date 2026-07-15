@@ -184,30 +184,75 @@ const AdminSearchView = {
         </div>
         <div class="ppa-panel" v-if="results.length">
             <table class="table table-sm" v-if="type==='student'">
-                <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Dept</th><th>CGPA</th><th>Status</th></tr></thead>
+                <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Dept</th><th>CGPA</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody>
-                <tr v-for="r in results" :key="r.id">
-                    <td>{{ r.id }}</td><td>{{ r.name }}</td><td>{{ r.email }}</td><td>{{ r.department }}</td><td>{{ r.cgpa }}</td>
-                    <td>{{ r.is_blacklisted ? 'Blacklisted' : 'Active' }}</td>
+                <tr v-for="s in results" :key="s.id">
+                    <template v-if="editingStudent === s.id">
+                        <td>{{ s.id }}</td>
+                        <td><input class="form-control form-control-sm" v-model="editForm.name"></td>
+                        <td>{{ s.email }}</td>
+                        <td>
+                            <select class="form-control form-control-sm" v-model="editForm.department">
+                                <option v-for="b in BRANCH_OPTIONS" :key="b.value" :value="b.value">{{ b.label }}</option>
+                            </select>
+                        </td>
+                        <td><input class="form-control form-control-sm" type="number" step="0.01" v-model="editForm.cgpa"></td>
+                        <td></td>
+                        <td>
+                            <button class="btn btn-sm btn-gold me-1" @click="saveStudent(s.id)">Save</button>
+                            <button class="btn btn-sm btn-secondary" @click="editingStudent=null">Cancel</button>
+                        </td>
+                    </template>
+                    <template v-else>
+                        <td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.email }}</td><td>{{ s.department }}</td><td>{{ s.cgpa }}</td>
+                        <td><span class="badge" :class="s.is_blacklisted ? 'bg-danger' : 'bg-success'">{{ s.is_blacklisted ? 'Blacklisted' : 'Active' }}</span></td>
+                        <td>
+                            <button class="btn btn-sm" :class="s.is_blacklisted ? 'btn-success' : 'btn-danger'" @click="toggleStudentBlacklist(s)">{{ s.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}</button>
+                            <button class="btn btn-sm btn-info text-white" @click="startEditStudent(s)">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger" @click="deleteStudent(s.id)">Delete</button>
+                        </td>
+                    </template>
                 </tr>
                 </tbody>
             </table>
             <table class="table table-sm" v-else>
-                <thead><tr><th>ID</th><th>Company</th><th>HR</th><th>Industry</th><th>Approval</th></tr></thead>
+                <thead><tr><th>ID</th><th>Company</th><th>HR</th><th>Industry</th><th>Approval</th><th>Account Status</th><th>Action</th></tr></thead>
                 <tbody>
-                <tr v-for="r in results" :key="r.id">
-                    <td>{{ r.id }}</td><td>{{ r.cname }}</td><td>{{ r.hr }}</td><td>{{ r.industry }}</td><td>{{ r.approval }}</td>
+                <tr v-for="c in results" :key="c.id">
+                    <td>{{ c.id }}</td><td>{{ c.cname }}</td><td>{{ c.hr }}</td><td>{{ c.industry }}</td>
+                    <td><span class="badge" :class="c.approval === 'Approved' ? 'bg-success' : (c.approval === 'Rejected' ? 'bg-danger' : 'bg-warning text-dark')">{{ c.approval }}</span></td>
+                    <td><span class="badge" :class="c.is_blacklisted ? 'bg-dark' : 'bg-success'">{{ c.is_blacklisted ? 'Blacklisted' : 'Active' }}</span></td>
+                    <td>
+                        <button class="btn btn-sm" :class="c.is_blacklisted ? 'btn-success' : 'btn-danger'" @click="toggleCompanyBlacklist(c)">{{ c.is_blacklisted ? 'Unblacklist' : 'Blacklist' }}</button>
+                        <button class="btn btn-sm btn-outline-danger" @click="deleteCompany(c.id)">Delete</button>
+                    </td>
                 </tr>
                 </tbody>
             </table>
         </div>
         <p v-else-if="searched" class="text-muted">No results found</p>
     </div>`,
-    data() { return { q: '', type: 'student', results: [], searched: false }; },
+    data() { return { q: '', type: 'student', results: [], searched: false, editingStudent: null, editForm: {} }; },
     methods: {
         async search() {
             const { data } = await api.get('/admin/search', { params: { q: this.q, type: this.type } });
             this.results = data; this.searched = true;
+        },
+        async toggleStudentBlacklist(s) {
+            await api.post(`/admin/student/${s.id}/${s.is_blacklisted ? 'unblacklist' : 'blacklist'}`);
+            await this.search();
+        },
+        async toggleCompanyBlacklist(c) {
+            await api.post(`/admin/company/${c.id}/${c.is_blacklisted ? 'unblacklist' : 'blacklist'}`);
+            await this.search();
+        },
+        async deleteStudent(id) { if (confirm('Delete this student?')) { await api.delete(`/admin/student/${id}`); await this.search(); } },
+        async deleteCompany(id) { if (confirm('Delete this company and its drives?')) { await api.delete(`/admin/company/${id}`); await this.search(); } },
+        startEditStudent(s) { this.editingStudent = s.id; this.editForm = { ...s }; },
+        async saveStudent(id) {
+            await api.put(`/admin/student/${id}`, this.editForm);
+            this.editingStudent = null;
+            await this.search();
         }
     }
 };

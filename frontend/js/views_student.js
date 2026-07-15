@@ -18,8 +18,9 @@ const StudentDashboardView = {
                     <td>{{ d.deadline }}</td><td>{{ d.salary }}</td>
                     <td><span class="badge" :class="d.is_eligible ? 'badge-eligible' : 'badge-ineligible'">{{ d.eligibility_reason }}</span></td>
                     <td>
-                        <router-link :to="'/student/drive/'+d.id" class="btn btn-sm btn-info text-white">View</router-link>
+                        <router-link :to="'/student/drive/'+d.id" class="btn btn-sm btn-info text-white me-1">View</router-link>
                         <span v-if="d.already_applied" class="badge bg-success">Applied</span>
+                        <span v-else-if="d.is_passed" class="badge bg-secondary">Deadline Passed</span>
                         <button v-else-if="d.is_eligible" class="btn btn-sm btn-gold" @click="apply(d.id)">Apply</button>
                     </td>
                 </tr>
@@ -57,7 +58,10 @@ const StudentDashboardView = {
     methods: {
         async load() {
             const [s, d, a] = await Promise.all([api.get('/student/me'), api.get('/student/drives'), api.get('/student/applications')]);
-            this.student = s.data; this.drives = d.data; this.applications = a.data;
+            const today = new Date().toISOString().split('T')[0];
+            this.student = s.data; 
+            this.drives = d.data.map(drv => ({ ...drv, is_passed: drv.deadline < today })); 
+            this.applications = a.data;
         },
         async apply(id) {
             this.error = '';
@@ -87,6 +91,7 @@ const ViewDriveView = {
         <p><strong>Location:</strong> {{ drive.location }}</p>
         <div class="alert" :class="drive.is_eligible ? 'alert-success' : 'alert-danger'">{{ drive.eligibility_reason }}</div>
         <p v-if="drive.already_applied" class="text-muted">You already applied for this drive</p>
+        <p v-else-if="drive.deadline < new Date().toISOString().split('T')[0]" class="text-danger fw-bold">Deadline Passed</p>
         <button v-else-if="drive.is_eligible" class="btn btn-gold" @click="apply">Apply Now</button>
     </div>`,
     data() { return { drive: null }; },
@@ -189,7 +194,7 @@ const StudentProfileView = {
             <div class="mb-2"><label class="form-label">Skills</label><input class="form-control" v-model="form.skills"></div>
             <div class="mb-2">
                 <label class="form-label">Resume (PDF)</label>
-                <p v-if="form.resume_name"><a :href="'/static/uploads/'+form.resume_name" target="_blank">View current resume</a></p>
+                <p v-if="form.resume_name"><a :href="resumeUrl(form.resume_name)" target="_blank">View current resume</a></p>
                 <input type="file" class="form-control" accept=".pdf" @change="onFile">
             </div>
             <button class="btn btn-gold">Save Changes</button>
@@ -198,6 +203,7 @@ const StudentProfileView = {
     data() { return { form: {}, resume: null, msg: '', error: '' }; },
     async mounted() { const { data } = await api.get('/student/me'); this.form = data; },
     methods: {
+        resumeUrl(name) { return api.defaults.baseURL.replace('/api', '') + '/static/uploads/' + name; },
         onFile(e) { this.resume = e.target.files[0]; },
         async submit() {
             this.msg = ''; this.error = '';

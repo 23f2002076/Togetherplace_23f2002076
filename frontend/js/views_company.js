@@ -27,10 +27,10 @@ const CompanyDashboardView = {
                     <td>{{ d.id }}</td><td>{{ d.drive_name }}</td><td>{{ d.jobtitle }}</td><td>{{ d.deadline }}</td>
                     <td>{{ d.status }}</td><td>{{ d.applicant_count }}</td>
                     <td>
-                        <router-link v-if="d.status!=='Rejected'" :to="'/company/drive/'+d.id+'/applicants'" class="btn btn-sm btn-success">Applicants</router-link>
-                        <template v-if="d.status!=='Rejected' && d.status!=='Closed'">
-                            <router-link :to="'/company/drive/'+d.id+'/edit'" class="btn btn-sm btn-info text-white">Edit</router-link>
-                            <button class="btn btn-sm btn-warning" @click="closeDrive(d.id)">Close</button>
+                        <template v-if="d.status!=='Rejected'">
+                            <router-link :to="'/company/drive/'+d.id+'/applicants'" class="btn btn-sm btn-success me-1">Applicants</router-link>
+                            <router-link :to="'/company/drive/'+d.id+'/edit'" class="btn btn-sm btn-info text-white me-1">Edit</router-link>
+                            <button v-if="d.status!=='Closed'" class="btn btn-sm btn-warning me-1" @click="closeDrive(d.id)">Close</button>
                         </template>
                         <button class="btn btn-sm btn-outline-danger" @click="deleteDrive(d.id)">Delete</button>
                     </td>
@@ -164,7 +164,7 @@ const ApplicantsView = {
     data() { return { applicants: [], drive: null }; },
     async mounted() { await this.load(); },
     methods: {
-        resumeUrl(name) { return `/static/uploads/${name}`; },
+        resumeUrl(name) { return api.defaults.baseURL.replace('/api', '') + `/static/uploads/${name}`; },
         async load() {
             const did = this.$route.params.id;
             const { data } = await api.get(`/company/drives/${did}/applicants`);
