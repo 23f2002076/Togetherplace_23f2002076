@@ -131,6 +131,7 @@ def delete_drive(did):
     if drv.company_id != comp.id:
         return jsonify({'error': 'this drive does not belong to your company'}), 403
     Application.query.filter_by(drive_id=did).delete()
+    Placement.query.filter_by(drive_id=did).delete()
     db.session.delete(drv)
     db.session.commit()
     cache.delete('admin_dashboard_stats')

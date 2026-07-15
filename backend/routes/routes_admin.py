@@ -195,6 +195,7 @@ def delete_stud(sid):
     stud = Student.query.get_or_404(sid)
     user = User.query.get(stud.user_id)
     Application.query.filter_by(student_id=sid).delete()
+    Placement.query.filter_by(student_id=sid).delete()
     db.session.delete(stud)
     if user:
         db.session.delete(user)
@@ -236,6 +237,7 @@ def delete_driv(did):
         return jsonify({'error': 'only admin can perform this action'}), 403
     drv = Drive.query.get_or_404(did)
     Application.query.filter_by(drive_id=did).delete()
+    Placement.query.filter_by(drive_id=did).delete()
     db.session.delete(drv)
     db.session.commit()
     clear_dash_cache()
